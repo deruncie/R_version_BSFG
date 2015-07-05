@@ -188,20 +188,24 @@ fast_BSFG_sampler = function(BSFG_state,n_samples) {
 			resids = matrix(rnorm(p*n,0,sqrt(1/resid_Y_prec)),nr = n,nc = p,byrow=T)
 			Y(phenMissing) = meanTraits(phenMissing) + resids(phenMissing)
 		}
+		# recover()
 		  
 	 # -----Sample Lambda------------------ #
 		#conditioning on W, B, F, marginalizing over E_a
 		Y_tilde = Y - X %*% B - Z_2 %*% W
-		Lambda = sample_Lambda( Y_tilde,F,resid_Y_prec, E_a_prec,Plam,invert_aI_bZAZ )
+		# Lambda = sample_Lambda( Y_tilde,F,resid_Y_prec, E_a_prec,Plam,invert_aI_bZAZ )
+		Lambda = sample_Lambda_c( Y_tilde,F,resid_Y_prec, E_a_prec,Plam,invert_aI_bZAZ )
 	   
 	 # -----Sample E_a_prec---------------- #
 		#conditioning on W, B, F, marginalizing over E_a 
-		E_a_prec = sample_prec_discrete_conditional(Y - X %*% B-F %*% t(Lambda) - Z_2 %*% W,h2_divisions,h2_priors_resids,invert_aI_bZAZ,resid_Y_prec)
+		# E_a_prec = sample_prec_discrete_conditional(Y - X %*% B-F %*% t(Lambda) - Z_2 %*% W,h2_divisions,h2_priors_resids,invert_aI_bZAZ,resid_Y_prec)
+		E_a_prec = sample_prec_discrete_conditional_c(Y - X %*% B-F %*% t(Lambda) - Z_2 %*% W,h2_divisions,h2_priors_resids,invert_aI_bZAZ,resid_Y_prec)
 		
 	 # -----Sample B and E_a--------------- #
 		#conditioning on W, F, Lambda
 		Y_tilde = Y - F %*% t(Lambda) - Z_2 %*% W
-		location_sample = sample_means( Y_tilde, resid_Y_prec, E_a_prec, invert_aPXA_bDesignDesignT )
+		# location_sample = sample_means( Y_tilde, resid_Y_prec, E_a_prec, invert_aPXA_bDesignDesignT )
+		location_sample = sample_means_c( Y_tilde, resid_Y_prec, E_a_prec, invert_aPXA_bDesignDesignT )
 		B   = location_sample[1:b,]
 		E_a = location_sample[b+(1:r),]
 
@@ -219,14 +223,16 @@ fast_BSFG_sampler = function(BSFG_state,n_samples) {
 		
 	 # -----Sample F_a--------------------- #
 		#conditioning on F, F_h2
-		F_a = sample_F_a(F,X_f,cbind(X_f,Z_1),F_h2,invert_aPXfA_bDesignDesignT)
+		# F_a = sample_F_a(F,X_f,cbind(X_f,Z_1),F_h2,invert_aPXfA_bDesignDesignT)
+		F_a = sample_F_a_c(F,X_f,cbind(X_f,Z_1),F_h2,invert_aPXfA_bDesignDesignT)
 		if(b_f > 0) F_b = F_a[1:b_f,]
 		F_a = F_a[(b_f+1):(b_f+r),]
 			   
 	 # -----Sample F----------------------- #
 		#conditioning on B,F_a,E_a,W,Lambda, F_h2
 		Y_tilde = Y - X %*% B - Z_1 %*% E_a - Z_2 %*% W
-		F = sample_factors_scores( Y_tilde, X_f,Z_1,Lambda,resid_Y_prec,F_b,F_a,F_h2 )
+		# F = sample_factors_scores( Y_tilde, X_f,Z_1,Lambda,resid_Y_prec,F_b,F_a,F_h2 )
+		F = sample_factors_scores_c( Y_tilde, X_f,Z_1,Lambda,resid_Y_prec,F_b,F_a,F_h2 )
 
 	 # -----Sample Lambda_prec------------- #
 		Lambda2 = Lambda^2
@@ -240,11 +246,11 @@ fast_BSFG_sampler = function(BSFG_state,n_samples) {
 	 # -----Sample E_a_prec---------------- #
 		#     #random effect 1 (D) residual precision
 			# need to check this !!!
-			# E_a_prec = rgamma(p,shape = E_a_prec_shape + r/2, rate = E_a_prec_rate + 1/2*diag(E_a %*% Ainv %*% t(E_a)))
+		# E_a_prec = rgamma(p,shape = E_a_prec_shape + r/2, rate = E_a_prec_rate + 1/2*diag(t(E_a) %*% Ainv %*% E_a))
 		
 	 # -----Sample W_prec------------------ #
 		if(ncol(Z_2) > 0) {
-			W_prec =  rgamma(p, W_prec_shape + r2/2,rate = W_prec_rate + 1/2*diag(W %*% A_2_inv %*% t(W)))
+			W_prec =  rgamma(p, W_prec_shape + r2/2,rate = W_prec_rate + 1/2*diag(t(W) %*% A_2_inv %*% W))
 		}
 	 
 	 # -----Sample delta, update tauh------ #

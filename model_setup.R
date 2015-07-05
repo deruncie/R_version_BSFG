@@ -4,6 +4,11 @@ source(paste(model_path,'fast_BSFG_sampler.R',sep='/'))
 source(paste(model_path,'BSFG_functions.R',sep='/'))
 source(paste(model_path,'plotting_diagnostics.R',sep='/'))
 
+library(Rcpp)
+library(RcppArmadillo)
+
+sourceCpp(paste(model_path,'BSFG_functions_c.cpp',sep='/'))
+
 
 setwd('/Users/der7/Documents/Statistics/Sparse_factor_G_matrix/Submission2/Analyses/Website/BSF-G_new/Runcie_Mukherjee_analyses/Simulations/Sim_2')
 
