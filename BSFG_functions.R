@@ -13,7 +13,6 @@ cholcov = function(X){
 
 sample_Lambda = function( Y_tilde,F,resid_Y_prec, E_a_prec,Plam,invert_aI_bZAZ ) {
 
-
 	#Sample factor loadings Lambda while marginalizing over residual
 	#genetic effects: Y - Z_2W = F*Lambda' + E, vec(E)~N(0,kron(Psi_E,In) + kron(Psi_U, ZAZ^T))
 	#note: conditioning on F, but marginalizing over E_a.
@@ -39,10 +38,11 @@ sample_Lambda = function( Y_tilde,F,resid_Y_prec, E_a_prec,Plam,invert_aI_bZAZ )
 		means = FUDi %*% UtY[,j]
 		Qlam = FUDi %*% t(FtU) + diag(Plam[j,])
 
+		# recover()
 		Llam = t(chol(Qlam))
-		vlam = qr.solve(Llam,means) 
-		mlam = qr.solve(t(Llam),vlam)
-		ylam = qr.solve(t(Llam),Zlams[,j])
+		vlam = forwardsolve(Llam,means)
+		mlam = backsolve(t(Llam),vlam)
+		ylam = backsolve(t(Llam),Zlams[,j])
 
 		Lambda[j,] = ylam + mlam
 
@@ -95,7 +95,6 @@ sample_prec_discrete_conditional = function(Y,h2_divisions,h2_priors,invert_aI_b
 		log_ps[j,] = ps_j
 		Trait_h2[j] = sum(runif(1)>cumsum(ps_j))/(h2_divisions)
 	}
-
 	Prec = (res_prec * (1-Trait_h2))/Trait_h2
 
 	return(Prec)
@@ -266,8 +265,8 @@ sample_factors_scores = function( Y_tilde, X, Z_1,Lambda,resid_Y_prec,F_b,F_a,F_
 	Lmsg = sweep(Lambda,1,resid_Y_prec,'*')
 	tau_e = 1/(1-F_h2)
 	S = t(chol(t(Lambda) %*% Lmsg + diag(tau_e)))
-	Meta = mrdivide(Y_tilde %*% Lmsg + sweep(X %*% F_b + Z_1 %*% F_a,2,tau_e,'*'),t(S))
-	F = mrdivide(Meta + matrix(rnorm(prod(dim(Meta))),nr = nrow(Meta)),S)
+	Meta = t(solve(S,t(Y_tilde %*% Lmsg + sweep(X %*% F_b + Z_1 %*% F_a,2,tau_e,'*'))))
+	F = t(solve(t(S),t(Meta + matrix(rnorm(prod(dim(Meta))),nr = nrow(Meta)))))
 
 	return(F)
 }
