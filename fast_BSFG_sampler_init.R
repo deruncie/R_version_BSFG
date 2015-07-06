@@ -1,6 +1,6 @@
 library(R.matlab)
 fast_BSFG_sampler_init = function(priors,run_parameters){
-	require(PEIP)
+	# require(PEIP)
 	require(Matrix)
 
 	# data_matrices,run_parameters,priors,current_state,Posterior,simulation = F)
@@ -32,7 +32,6 @@ fast_BSFG_sampler_init = function(priors,run_parameters){
 # ----------------------- #
 # ------read data-------- #
 # ----------------------- #
-	# recover()
     # load('../setup.RData')
     setup = readMat('../setup.mat')
     for(i in 1:10) names(setup) = sub('.','_',names(setup),fixed=T)
@@ -277,6 +276,7 @@ fast_BSFG_sampler_init = function(priors,run_parameters){
 # ----Precalculate some matrices------ #
 # ------------------------------------ #
 
+    # recover()
     #invert the random effect covariance matrices
     Ainv = solve(A)
     A_2_inv = diag(1,r2) #Z_2 random effects are assumed to have covariance proportional to the identity. Can be modified.
@@ -298,7 +298,7 @@ fast_BSFG_sampler_init = function(priors,run_parameters){
     #inv(a*bdiag(priors$b_X_prec,Ainv) + b*t(cbind(X,Z_1)) %*% cbind(X,Z_1)) = U %*% diag(1/(a*s1+b*s2)) %*% t(U)
     Design= cbind(X,Z_1)
     Design2 = t(Design) %*% Design
-    result = GSVD(as.matrix(cholcov(bdiag(priors$b_X_prec,Ainv))),cholcov(Design2))
+    result = GSVD_2_c(as.matrix(cholcov(bdiag(priors$b_X_prec,Ainv))),cholcov(Design2))
 	invert_aPXA_bDesignDesignT = list(
 		U = t(solve(result$X)),
 		s1 = diag(result$C)^2,
@@ -312,7 +312,7 @@ fast_BSFG_sampler_init = function(priors,run_parameters){
     #inv(a*blkdiag(fixed_effect_prec*eye(b),Ainv) + b*[X Z_1]'[X Z_1]) = U*diag(1./(a.*s1+b.*s2))*U'
     Design = cbind(X_f,Z_1)
     Design2 = t(Design) %*% Design
-    result = GSVD(cholcov(bdiag(priors$b_Xf_prec,Ainv)),cholcov(Design2))
+    result = GSVD_2_c(cholcov(bdiag(priors$b_Xf_prec,Ainv)),cholcov(Design2))
 	invert_aPXfA_bDesignDesignT = list(
 		U = t(solve(result$X)),
 		s1 = diag(result$C)^2,
@@ -326,7 +326,7 @@ fast_BSFG_sampler_init = function(priors,run_parameters){
     if(r2 > 0) {
 	    Design = Z_2
 	    Design2 = t(Design) %*% Design
-	    result = GSVD(cholcov(A_2_inv),cholcov(Design2))
+	    result = GSVD_2_c(cholcov(A_2_inv),cholcov(Design2))
 		invert_aPXA_bDesignDesignT_rand2 = list(
 			U = t(solve(result$X)),
 			s1 = diag(result$C)^2,
@@ -343,7 +343,7 @@ fast_BSFG_sampler_init = function(priors,run_parameters){
     # inv(a*Z_1'*Z_1 + b*Ainv) = U*diag(1./(a.*s1+b.*s2))*U'
     #similar to fixed effects + random effects 1 above, but no fixed effects.
     ZZt = t(Z_1) %*% Z_1
-    result = GSVD(cholcov(ZZt),cholcov(Ainv))
+    result = GSVD_2_c(cholcov(ZZt),cholcov(Ainv))
 	invert_aZZt_Ainv = list(
 		U = t(solve(result$X)),
 			s1 = diag(result$C)^2,

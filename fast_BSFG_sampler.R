@@ -213,18 +213,20 @@ fast_BSFG_sampler = function(BSFG_state,n_samples) {
 		#conditioning on B, E_a, F, Lambda
 		if(ncol(Z_2) > 0) {
 			Y_tilde = Y - X %*% B - Z_1 %*% E_a - F %*% t(Lambda)
-			location_sample = sample_means( Y_tilde, resid_Y_prec, W_prec, invert_aPXA_bDesignDesignT_rand2 )
+			# location_sample = sample_means( Y_tilde, resid_Y_prec, W_prec, invert_aPXA_bDesignDesignT_rand2 )
+			location_sample = sample_means_c( Y_tilde, resid_Y_prec, W_prec, invert_aPXA_bDesignDesignT_rand2 )
 			W = location_sample
 		}
 		
 	 # -----Sample F_h2-------------------- #
 		#conditioning on F, marginalizing over F_a
-		F_h2 = sample_h2s_discrete(F - X_f %*% F_b,h2_divisions,h2_priors_factors,invert_aI_bZAZ)
+		# F_h2 = sample_h2s_discrete(F - X_f %*% F_b,h2_divisions,h2_priors_factors,invert_aI_bZAZ)
+		F_h2 = sample_h2s_discrete_c(F - X_f %*% F_b,h2_divisions,h2_priors_factors,invert_aI_bZAZ)
 		
 	 # -----Sample F_a--------------------- #
 		#conditioning on F, F_h2
 		# F_a = sample_F_a(F,X_f,cbind(X_f,Z_1),F_h2,invert_aPXfA_bDesignDesignT)
-		F_a = sample_F_a_c(F,X_f,cbind(X_f,Z_1),F_h2,invert_aPXfA_bDesignDesignT)
+		F_a = sample_means_c(F,1/(1-F_h2),1/F_h2,invert_aPXfA_bDesignDesignT)
 		if(b_f > 0) F_b = F_a[1:b_f,]
 		F_a = F_a[(b_f+1):(b_f+r),]
 			   
@@ -245,7 +247,6 @@ fast_BSFG_sampler = function(BSFG_state,n_samples) {
 		
 	 # -----Sample E_a_prec---------------- #
 		#     #random effect 1 (D) residual precision
-			# need to check this !!!
 		# E_a_prec = rgamma(p,shape = E_a_prec_shape + r/2, rate = E_a_prec_rate + 1/2*diag(t(E_a) %*% Ainv %*% E_a))
 		
 	 # -----Sample W_prec------------------ #

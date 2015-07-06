@@ -10,9 +10,9 @@ library(RcppArmadillo)
 sourceCpp(paste(model_path,'BSFG_functions_c.cpp',sep='/'))
 
 
-setwd('/Users/der7/Documents/Statistics/Sparse_factor_G_matrix/Submission2/Analyses/Website/BSF-G_new/Runcie_Mukherjee_analyses/Simulations/Sim_2')
+setwd('/Users/der7/Documents/Statistics/Sparse_factor_G_matrix/Submission2/Analyses/Website/BSF-G_new/Runcie_Mukherjee_analyses/Simulations/Sim_3')
 
-seed = 1234
+seed = 100
 set.seed(seed)
 
 rep = 2
@@ -50,10 +50,13 @@ priors = list(
     delta_2_shape       =   3,
     delta_2_rate        =   1,
     # h2_priors_factors   =   (1+c(run_parameters$h2_divisions-2,rep(0,run_parameters$h2_divisions-1)/(-2+2*run_parameters$h2_divisions),
-    h2_priors_resids    =   c(0,dt((2:run_parameters$h2_divisions)/run_parameters$h2_divisions,.1)),
+    # h2_priors_resids    =   c(0,dt((2:run_parameters$h2_divisions)/run_parameters$h2_divisions,1)),
+    h2_priors_resids    =   c(0,rep(1,run_parameters$h2_divisions-1)),
+    # h2_priors_resids    =   dt((1:run_parameters$h2_divisions)/run_parameters$h2_divisions,.1),
     h2_priors_factors   =   dt((1:run_parameters$h2_divisions)/run_parameters$h2_divisions,.1)
 )
 
+print('Initializing')
 save(priors,file = 'Priors.RData')
 # Initialize Chain, prep runs
 BSFG_state = fast_BSFG_sampler_init(priors,run_parameters)
@@ -70,6 +73,7 @@ BSFG_state = clear_Posterior(BSFG_state)
 # c1=fix(clock);
 n_samples = 200;
 for(i  in 1:10) {
+    print(sprintf('Run %d',i))
     BSFG_state = fast_BSFG_sampler(BSFG_state,n_samples)
     print(i)
 }

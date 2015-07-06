@@ -69,23 +69,25 @@ sample_prec_discrete_conditional = function(Y,h2_divisions,h2_priors,invert_aI_b
 	# res_prec = matlab$res.prec
 	# names(invert_aI_bZAZ) = c('U','s')
 
+	# other code doesn't allow Prec == Inf. So should set prior h2_priors[1] = 0
 
 	U = invert_aI_bZAZ$U
 	s = invert_aI_bZAZ$s
 
 	p = ncol(Y)
+	n = nrow(Y)
 	Trait_h2 = rep(0,p)
 
-	log_ps = matrix(0,p,h2_divisions)
+	log_ps = matrix(NA,p,h2_divisions)
 	std_scores_b = t(Y) %*% U
 	for(i in 1:h2_divisions) {
 		h2 = (i-1)/(h2_divisions)
-		if(h2 > 0) {
+		if(h2 > 0){
 			std_scores = sweep(sweep(std_scores_b,2,sqrt(s+(1-h2)/h2),'/'),1,sqrt(h2/(res_prec*(1-h2))),'/')
 			det = colSums(log((s+(1-h2)/h2) %*% t(h2/(res_prec*(1-h2))))/2)
 		} else {
-			std_scores = t(Y)
-			det = 0
+			std_scores = sweep(t(Y),1,sqrt(1/res_prec),'/')
+			det = n/2*log(1/res_prec)
 		}
 		log_ps[,i] = rowSums(dnorm(std_scores,log=T)) - det + log(h2_priors[i])
 	}
@@ -95,7 +97,7 @@ sample_prec_discrete_conditional = function(Y,h2_divisions,h2_priors,invert_aI_b
 		log_ps[j,] = ps_j
 		Trait_h2[j] = sum(runif(1)>cumsum(ps_j))/(h2_divisions)
 	}
-	Prec = (res_prec * (1-Trait_h2))/Trait_h2
+	Prec = (res_prec*(1-Trait_h2))/Trait_h2
 
 	return(Prec)
 }
@@ -131,6 +133,7 @@ sample_h2s_discrete = function(F,h2_divisions,h2_priors,invert_aI_bZAZ){
 			std_scores = 1/sqrt(h2) * sweep(std_scores_b,2,sqrt(s+(1-h2)/h2),'/')
 			det = sum(log((s+(1-h2)/h2)*h2)/2)
 		} else {
+			# std_scores = std_scores_b # note. This is the same with F or std_scores_b
 			std_scores = t(F)
 			det = 0
 		}
@@ -189,63 +192,62 @@ sample_means = function( Y_tilde, resid_Y_prec, E_a_prec, invert_aPXA_bDesignDes
 	return(location_sample)
 }
 
-sample_F_a = function(F,X_f,Z_1,F_h2,invert_aPXA_bDesignDesignT) {
-	#samples genetic effects on factors (F_a) conditional on the factor scores F:
-	# F_i = F_{a_i} + E_i, E_i~N(0,s2*(1-h2)*I) for each latent trait i
-	# U_i = zeros(r,1) if h2_i = 0
-	# it is assumed that s2 = 1 because this scaling factor is absorbed in
-	# Lambda
-	# invert_aZZt_Ainv has parameters to diagonalize a*Z_1*Z_1' + b*I for fast
-	# inversion:
+# sample_F_a = function(F,X_f,Z_1,F_h2,invert_aPXA_bDesignDesignT) {
+# 	#samples genetic effects on factors (F_a) conditional on the factor scores F:
+# 	# F_i = F_{a_i} + E_i, E_i~N(0,s2*(1-h2)*I) for each latent trait i
+# 	# U_i = zeros(r,1) if h2_i = 0
+# 	# it is assumed that s2 = 1 because this scaling factor is absorbed in
+# 	# Lambda
+# 	# invert_aZZt_Ainv has parameters to diagonalize a*Z_1*Z_1' + b*I for fast
+# 	# inversion:
 	
-	# matlab = readMat('sample_F_a_data.mat')
-	# for(i in 1:10) names(matlab) = sub('.','_',names(matlab),fixed=T)
-	# F = matlab$F
-	# X_f = matlab$X_f
-	# Z_1 = matlab$Z_1
-	# F_h2 = matlab$F_h2
-	# invert_aPXA_bDesignDesignT = matlab$invert_aPXA_bDesignDesignT
-	# names(invert_aPXA_bDesignDesignT) = c('U','s1','s2','Design_U')
+# 	# matlab = readMat('sample_F_a_data.mat')
+# 	# for(i in 1:10) names(matlab) = sub('.','_',names(matlab),fixed=T)
+# 	# F = matlab$F
+# 	# X_f = matlab$X_f
+# 	# Z_1 = matlab$Z_1
+# 	# F_h2 = matlab$F_h2
+# 	# invert_aPXA_bDesignDesignT = matlab$invert_aPXA_bDesignDesignT
+# 	# names(invert_aPXA_bDesignDesignT) = c('U','s1','s2','Design_U')
 
-	U = invert_aPXA_bDesignDesignT$U
-	s1 = invert_aPXA_bDesignDesignT$s1
-	s2 = invert_aPXA_bDesignDesignT$s2
-	Design_U = invert_aPXA_bDesignDesignT$Design_U
+# 	U = invert_aPXA_bDesignDesignT$U
+# 	s1 = invert_aPXA_bDesignDesignT$s1
+# 	s2 = invert_aPXA_bDesignDesignT$s2
+# 	Design_U = invert_aPXA_bDesignDesignT$Design_U
 
-	k = ncol(F)
-	r = ncol(Z_1)
-	b_f = ncol(X_f)
-	XtX = t(X_f) %*% X_f
-	tau_e = 1/(1-F_h2)
-	tau_u = 1/F_h2
-	b = t(U) %*% t(Z_1) %*% sweep(F,2,tau_e,'*')
-	z = matrix(rnorm(r*k),nr = r, nc = k)
-	F_a = matrix(0,nr = r,nc = k)
+# 	k = ncol(F)
+# 	r = ncol(Z_1)
+# 	b_f = ncol(X_f)
+# 	XtX = t(X_f) %*% X_f
+# 	tau_e = 1/(1-F_h2)
+# 	tau_u = 1/F_h2
+# 	b = sweep(t(Design_U) %*% F,2,tau_e,'*')
+# 	z = matrix(rnorm(r*k),nr = r, nc = k)
+# 	F_a = matrix(0,nr = r,nc = k)
 
-	for(j in 1:k) {
-		if(tau_e[j]==1) {
-			if(nrow(XtX) > 0) {
-				Cov = XtX*tau_e[j];
-				# I don't get this. Check !!!
-				F_a[,j] = rbind(qr.solve(Cov,t(X_f) %*% F[,j]*tau_e[j]) + qr.solve(chol(Cov),rnorm(b_f)),matrix(0,nr = r-b_f, nc = 1))
-			} else{
-				F_a[,j] = 0
-			}
-		} else if(tau_e[j] == Inf) {
-			F_a[,j] = F[,j]
-		} else {
-			d = s1*tau_u[j] + s2*tau_e[j]
-			mlam = b[,j] / d
-			F_a[,j] = U %*% (mlam + z[,j]/sqrt(d))
-		}
-		if(tau_e[j] == 1) {
-		   #  disp(F_a[,j])
-		}
-	}
+# 	for(j in 1:k) {
+# 		if(tau_e[j]==1) {
+# 			if(nrow(XtX) > 0) {
+# 				Cov = XtX*tau_e[j];
+# 				# I don't get this. Check !!!
+# 				F_a[,j] = rbind(qr.solve(Cov,t(X_f) %*% F[,j]*tau_e[j]) + qr.solve(chol(Cov),rnorm(b_f)),matrix(0,nr = r-b_f, nc = 1))
+# 			} else{
+# 				F_a[,j] = 0
+# 			}
+# 		} else if(tau_e[j] == Inf) {
+# 			F_a[,j] = F[,j]
+# 		} else {
+# 			d = s1*tau_u[j] + s2*tau_e[j]
+# 			mlam = b[,j] / d
+# 			F_a[,j] = U %*% (mlam + z[,j]/sqrt(d))
+# 		}
+# 		if(tau_e[j] == 1) {
+# 		   #  disp(F_a[,j])
+# 		}
+# 	}
 
-	return(F_a)
-}
-
+# 	return(F_a)
+# }
 
 sample_factors_scores = function( Y_tilde, X, Z_1,Lambda,resid_Y_prec,F_b,F_a,F_h2 ) {
 #Sample factor scores given factor loadings (F_a), factor heritabilities (F_h2) and
