@@ -287,6 +287,12 @@ fast_BSFG_sampler_init = function(priors,run_parameters){
     #rank
 #     XZ = [X_f Z_1]
 #     [U,S,~]          = svd(XZ*blkdiag(1e6*eye(b_f),A)*XZ')
+    # recover()
+    # r = rgamma(nrow(Z_1),1,1)
+    # result = GSVD_2_c(cholcov(diag(r)),cholcov(Z_1 %*% A %*% t(Z_1)))
+    # r2 = rgamma(nrow(Z_1),1,1)
+    # result2 = GSVD_2_c(cholcov(diag(r2)),cholcov(Z_1 %*% A %*% t(Z_1)))
+    
     result = svd(Z_1 %*% A %*% t(Z_1))
     invert_aI_bZAZ = list(
         U = result$u,
@@ -298,7 +304,7 @@ fast_BSFG_sampler_init = function(priors,run_parameters){
     #inv(a*bdiag(priors$b_X_prec,Ainv) + b*t(cbind(X,Z_1)) %*% cbind(X,Z_1)) = U %*% diag(1/(a*s1+b*s2)) %*% t(U)
     Design= cbind(X,Z_1)
     Design2 = t(Design) %*% Design
-    result = GSVD_2_c(as.matrix(cholcov(bdiag(priors$b_X_prec,Ainv))),cholcov(Design2))
+    result = GSVD_2_c(cholcov(bdiag(priors$b_X_prec,Ainv)),cholcov(Design2))
 	invert_aPXA_bDesignDesignT = list(
 		U = t(solve(result$X)),
 		s1 = diag(result$C)^2,

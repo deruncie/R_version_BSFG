@@ -10,9 +10,9 @@ library(RcppArmadillo)
 sourceCpp(paste(model_path,'BSFG_functions_c.cpp',sep='/'))
 
 
-setwd('/Users/der7/Documents/Statistics/Sparse_factor_G_matrix/Submission2/Analyses/Website/BSF-G_new/Runcie_Mukherjee_analyses/Simulations/Sim_3')
+setwd('/Users/der7/Documents/Statistics/Sparse_factor_G_matrix/Submission2/Analyses/Website/BSF-G_new/Runcie_Mukherjee_analyses/Simulations/Sim_2')
 
-seed = 100
+seed = 1234
 set.seed(seed)
 
 rep = 2
@@ -60,6 +60,7 @@ print('Initializing')
 save(priors,file = 'Priors.RData')
 # Initialize Chain, prep runs
 BSFG_state = fast_BSFG_sampler_init(priors,run_parameters)
+
 BSFG_state = clear_Posterior(BSFG_state)
 
 

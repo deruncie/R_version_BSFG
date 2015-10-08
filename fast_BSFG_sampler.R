@@ -195,6 +195,9 @@ fast_BSFG_sampler = function(BSFG_state,n_samples) {
 		Y_tilde = Y - X %*% B - Z_2 %*% W
 		# Lambda = sample_Lambda( Y_tilde,F,resid_Y_prec, E_a_prec,Plam,invert_aI_bZAZ )
 		Lambda = sample_Lambda_c( Y_tilde,F,resid_Y_prec, E_a_prec,Plam,invert_aI_bZAZ )
+
+	 # -----Sample resid_Y_prec ---------------- #
+		# should be able to sample this here marginalizing over E_a in the same way that E_a_prec is done below.
 	   
 	 # -----Sample E_a_prec---------------- #
 		#conditioning on W, B, F, marginalizing over E_a 
